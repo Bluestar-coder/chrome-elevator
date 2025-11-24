@@ -75,6 +75,8 @@ jobs:
             toolchain: stable
           - target: aarch64-pc-windows-gnu
             toolchain: stable
+      fail-fast: false
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
 
