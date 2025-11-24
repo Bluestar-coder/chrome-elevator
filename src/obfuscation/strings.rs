@@ -11,7 +11,7 @@ impl ObfuscatedString {
     pub const fn new(data: &'static [u8], key: u8) -> Self {
         Self { data, key }
     }
-    
+
     pub fn decrypt(&self) -> String {
         self.data
             .iter()
@@ -19,11 +19,9 @@ impl ObfuscatedString {
             .map(|(i, &b)| (b ^ self.key ^ (i as u8)) as char)
             .collect()
     }
-    
+
     pub fn decrypt_wide(&self) -> Vec<u16> {
-        self.decrypt()
-            .encode_utf16()
-            .collect()
+        self.decrypt().encode_utf16().collect()
     }
 }
 
@@ -33,7 +31,7 @@ macro_rules! obf_str {
     ($s:expr) => {{
         const DATA: &[u8] = $s.as_bytes();
         const KEY: u8 = 0xAA;
-        static OBF: $crate::obfuscation::ObfuscatedString = 
+        static OBF: $crate::obfuscation::ObfuscatedString =
             $crate::obfuscation::ObfuscatedString::new(DATA, KEY);
         OBF.decrypt()
     }};
@@ -45,7 +43,7 @@ macro_rules! obf_wstr {
     ($s:expr) => {{
         const DATA: &[u8] = $s.as_bytes();
         const KEY: u8 = 0xAA;
-        static OBF: $crate::obfuscation::ObfuscatedString = 
+        static OBF: $crate::obfuscation::ObfuscatedString =
             $crate::obfuscation::ObfuscatedString::new(DATA, KEY);
         OBF.decrypt_wide()
     }};
@@ -58,13 +56,15 @@ pub struct StackString {
 
 impl StackString {
     pub fn new(s: String) -> Self {
-        Self { data: s.into_bytes() }
+        Self {
+            data: s.into_bytes(),
+        }
     }
-    
+
     pub fn as_ptr(&self) -> *const u8 {
         self.data.as_ptr()
     }
-    
+
     pub fn as_str(&self) -> &str {
         std::str::from_utf8(&self.data).unwrap_or("")
     }
@@ -92,13 +92,13 @@ pub static WEB_DATA_DB: LazyLock<String> = LazyLock::new(|| obf_str!("Web Data")
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_string_obfuscation() {
         let s = obf_str!("test");
         assert_eq!(s, "test");
     }
-    
+
     #[test]
     fn test_stack_string_cleanup() {
         let s = StackString::new("secret".to_string());

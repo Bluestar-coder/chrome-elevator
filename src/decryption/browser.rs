@@ -1,12 +1,13 @@
 // 浏览器配置和管理
-use std::path::PathBuf;
-use anyhow::Result;
 use crate::obf_str;
+use anyhow::Result;
+use std::path::PathBuf;
 
 #[derive(Debug, Clone)]
 pub struct BrowserConfig {
     pub name: String,
     pub display_name: String,
+    #[allow(dead_code)]
     pub process_name: String,
     pub user_data_path: PathBuf,
 }
@@ -24,7 +25,7 @@ impl BrowserConfig {
                 .join(&*crate::obfuscation::USER_DATA),
         }
     }
-    
+
     /// 获取 Brave 配置
     pub fn brave() -> Self {
         Self {
@@ -37,7 +38,7 @@ impl BrowserConfig {
                 .join(&*crate::obfuscation::USER_DATA),
         }
     }
-    
+
     /// 获取 Edge 配置
     pub fn edge() -> Self {
         Self {
@@ -50,7 +51,7 @@ impl BrowserConfig {
                 .join(&*crate::obfuscation::USER_DATA),
         }
     }
-    
+
     /// 根据名称获取配置
     pub fn from_name(name: &str) -> Result<Self> {
         match name.to_lowercase().as_str() {
@@ -60,12 +61,12 @@ impl BrowserConfig {
             _ => anyhow::bail!("Unknown browser: {}", name),
         }
     }
-    
+
     /// 获取 Local State 文件路径
     pub fn local_state_path(&self) -> PathBuf {
         self.user_data_path.join(&*crate::obfuscation::LOCAL_STATE)
     }
-    
+
     /// 检查浏览器是否已安装
     pub fn is_installed(&self) -> bool {
         self.user_data_path.exists() && self.local_state_path().exists()
@@ -75,9 +76,9 @@ impl BrowserConfig {
 /// 获取 LocalAppData 路径
 #[cfg(target_os = "windows")]
 fn get_local_appdata() -> PathBuf {
-    use windows::Win32::UI::Shell::*;
     use windows::core::PWSTR;
-    
+    use windows::Win32::UI::Shell::*;
+
     unsafe {
         let mut path: PWSTR = PWSTR::null();
         if SHGetKnownFolderPath(
@@ -85,12 +86,14 @@ fn get_local_appdata() -> PathBuf {
             KNOWN_FOLDER_FLAG(0),
             None,
             &mut path,
-        ).is_ok() {
+        )
+        .is_ok()
+        {
             let path_str = path.to_string().unwrap_or_default();
             return PathBuf::from(path_str);
         }
     }
-    
+
     // 回退方案
     std::env::var("LOCALAPPDATA")
         .map(PathBuf::from)
@@ -117,14 +120,14 @@ pub fn discover_installed_browsers() -> Vec<BrowserConfig> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_browser_config_creation() {
         let chrome = BrowserConfig::chrome();
         assert_eq!(chrome.name, "chrome");
         assert!(chrome.user_data_path.to_string_lossy().contains("Chrome"));
     }
-    
+
     #[test]
     fn test_from_name() {
         assert!(BrowserConfig::from_name("chrome").is_ok());

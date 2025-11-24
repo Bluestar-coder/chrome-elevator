@@ -1,14 +1,15 @@
 // COM 接口调用模块 - 与 Chrome ABE COM 接口交互
 
-use anyhow::{Result, Context};
-use windows::Win32::System::Registry::*;
+use anyhow::{Context, Result};
 use windows::core::PCSTR;
+use windows::Win32::System::Registry::*;
 
 /// ABE 解密器 - 使用 COM 接口获取加密密钥
 pub struct AbeDecryptor;
 
 impl AbeDecryptor {
     /// 从 Windows Registry 获取加密的主密钥
+    #[allow(dead_code)]
     pub fn get_encrypted_master_key() -> Result<Vec<u8>> {
         unsafe {
             let mut key_handle = HKEY::default();
@@ -21,7 +22,8 @@ impl AbeDecryptor {
                 0,
                 KEY_READ,
                 &mut key_handle,
-            ).context("Failed to open registry key for ABE")?;
+            )
+            .context("Failed to open registry key for ABE")?;
 
             // 读取 "EncryptedKey" 值
             let value_name = b"EncryptedKey\0";
@@ -36,7 +38,8 @@ impl AbeDecryptor {
                 Some(&mut data_type),
                 Some(data.as_mut_ptr()),
                 Some(&mut data_size),
-            ).context("Failed to read EncryptedKey from registry")?;
+            )
+            .context("Failed to read EncryptedKey from registry")?;
 
             let _ = RegCloseKey(key_handle);
 
@@ -49,11 +52,11 @@ impl AbeDecryptor {
     pub fn get_master_key_from_local_state(local_state_path: &std::path::Path) -> Result<Vec<u8>> {
         use std::fs;
 
-        let content = fs::read_to_string(local_state_path)
-            .context("Failed to read Local State file")?;
+        let content =
+            fs::read_to_string(local_state_path).context("Failed to read Local State file")?;
 
-        let json: serde_json::Value = serde_json::from_str(&content)
-            .context("Failed to parse Local State JSON")?;
+        let json: serde_json::Value =
+            serde_json::from_str(&content).context("Failed to parse Local State JSON")?;
 
         // Local State 的结构: {"os_crypt":{"encrypted_key":"<base64_encoded_key>"}}
         let encrypted_key_b64 = json
@@ -63,7 +66,7 @@ impl AbeDecryptor {
             .context("Could not find encrypted_key in Local State")?;
 
         // Base64 解码
-        use base64::{Engine as _, engine::general_purpose};
+        use base64::{engine::general_purpose, Engine as _};
         let encrypted_key = general_purpose::STANDARD
             .decode(encrypted_key_b64)
             .context("Failed to decode base64 encrypted key")?;
@@ -86,15 +89,7 @@ impl AbeDecryptor {
         };
 
         unsafe {
-            CryptUnprotectData(
-                &mut data_blob,
-                None,
-                None,
-                None,
-                None,
-                0,
-                &mut output_blob,
-            )?;
+            CryptUnprotectData(&mut data_blob, None, None, None, None, 0, &mut output_blob)?;
 
             let key = std::slice::from_raw_parts(output_blob.pbData, output_blob.cbData as usize);
             let result = key.to_vec();
@@ -108,7 +103,7 @@ impl AbeDecryptor {
 
     /// 通过 ABE 解密主密钥
     /// 这是 Chrome v91+ 的新方法，使用 App-Bound Encryption
-    pub fn decrypt_with_abe(encrypted_key: &[u8]) -> Result<Vec<u8>> {
+    pub fn decrypt_with_abe(_encrypted_key: &[u8]) -> Result<Vec<u8>> {
         // ABE 解密需要特殊的 Windows 10+ 支持
         // 这涉及调用特殊的 COM 对象来解密
 

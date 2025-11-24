@@ -1,12 +1,12 @@
 // 进程操作模块 - 创建、管理和注入目标进程
 
 use anyhow::Result;
-use windows::Win32::System::Threading::*;
-use windows::Win32::Foundation::*;
-use windows::core::{PCWSTR, PWSTR};
+use std::ffi::c_void;
 use std::mem;
 use std::ptr;
-use std::ffi::c_void;
+use windows::core::{PCWSTR, PWSTR};
+use windows::Win32::Foundation::*;
+use windows::Win32::System::Threading::*;
 
 /// 目标进程句柄和信息
 pub struct TargetProcess {
@@ -19,10 +19,7 @@ impl TargetProcess {
     /// 以暂停状态创建新进程
     pub fn create_suspended(exe_path: &str) -> Result<Self> {
         // 转换路径为宽字符
-        let wide_path: Vec<u16> = exe_path
-            .encode_utf16()
-            .chain(std::iter::once(0))
-            .collect();
+        let wide_path: Vec<u16> = exe_path.encode_utf16().chain(std::iter::once(0)).collect();
 
         let mut startup_info: STARTUPINFOW = unsafe { mem::zeroed() };
         startup_info.cb = mem::size_of::<STARTUPINFOW>() as u32;
@@ -54,11 +51,7 @@ impl TargetProcess {
     /// 从进程 ID 打开进程
     pub fn open(process_id: u32) -> Result<Self> {
         unsafe {
-            let process_handle = OpenProcess(
-                PROCESS_ALL_ACCESS,
-                false,
-                process_id,
-            )?;
+            let process_handle = OpenProcess(PROCESS_ALL_ACCESS, false, process_id)?;
 
             Ok(Self {
                 process_handle,
@@ -191,7 +184,9 @@ impl TargetProcess {
         let exit_code = Self::wait_thread(thread_handle, 5000)?;
 
         // 7. 清理
-        unsafe { CloseHandle(thread_handle); }
+        unsafe {
+            CloseHandle(thread_handle);
+        }
         let _ = memory_mgr.free(code_buffer.address(), shellcode.len());
         if !param_address.is_null() {
             let _ = memory_mgr.free(param_address, param.unwrap_or(&[]).len());
@@ -231,9 +226,9 @@ mod tests {
         // 测试 TargetProcess 结构的创建
         // 实际的进程创建需要在 Windows 系统上测试
         let _ = TargetProcess {
-            process_handle: HANDLE(std::ptr::null_mut()),
+            process_handle: HANDLE(std::ptr::null_mut::<()>() as isize),
             process_id: 12345,
-            thread_handle: HANDLE(std::ptr::null_mut()),
+            thread_handle: HANDLE(std::ptr::null_mut::<()>() as isize),
         };
     }
 }

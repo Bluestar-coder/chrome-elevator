@@ -7,7 +7,7 @@ mod obfuscation_tests {
     #[test]
     fn test_string_obfuscation_import() {
         // 验证混淆模块可以正确导入
-        let manifest = include_str!("../../Cargo.toml");
+        let manifest = include_str!("../Cargo.toml");
         assert!(manifest.contains("chrome-elevator"));
     }
 
@@ -35,8 +35,8 @@ mod injection_tests {
     #[test]
     fn test_target_process_struct() {
         // 测试TargetProcess结构
-        use windows::Win32::Foundation::HANDLE;
         use std::ptr;
+        use windows::Win32::Foundation::HANDLE;
 
         let handle = HANDLE(ptr::null_mut());
         assert!(handle.is_invalid());
@@ -45,7 +45,9 @@ mod injection_tests {
     #[test]
     fn test_pe_header_validation() {
         // 验证PE文件头验证逻辑
-        let valid_pe = vec![b'M', b'Z', 0; 64];
+        let mut valid_pe = vec![0u8; 64];
+        valid_pe[0] = b'M';
+        valid_pe[1] = b'Z';
         assert!(valid_pe[0] == b'M');
         assert!(valid_pe[1] == b'Z');
         assert!(valid_pe.len() >= 64);
@@ -90,7 +92,7 @@ mod decryption_tests {
 mod ffi_tests {
     #[test]
     fn test_status_codes() {
-        use crate::ffi::{STATUS_SUCCESS, STATUS_ACCESS_DENIED, nt_success};
+        use crate::ffi::{nt_success, STATUS_ACCESS_DENIED, STATUS_SUCCESS};
 
         assert!(nt_success(STATUS_SUCCESS));
         assert!(!nt_success(STATUS_ACCESS_DENIED));
@@ -98,7 +100,7 @@ mod ffi_tests {
 
     #[test]
     fn test_memory_constants() {
-        use crate::ffi::{MEM_COMMIT, MEM_RESERVE, MEM_RELEASE, PAGE_READWRITE, PAGE_EXECUTE_READ};
+        use crate::ffi::{MEM_COMMIT, MEM_RELEASE, MEM_RESERVE, PAGE_EXECUTE_READ, PAGE_READWRITE};
 
         assert_eq!(MEM_COMMIT, 0x1000);
         assert_eq!(MEM_RESERVE, 0x2000);
@@ -116,7 +118,8 @@ mod main_workflow_tests {
         let args = vec![
             "chrome-elevator.exe",
             "chrome",
-            "--output-path", "./output",
+            "--output-path",
+            "./output",
             "--verbose",
         ];
 
