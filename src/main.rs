@@ -1,8 +1,8 @@
 // Chrome Elevator - Rust Edition
 // v0.17.0 - Rust port with cross-platform compilation support
 
-use chrome_elevator::decryption::{AbeDecryptor, BrowserConfig, DataExtractor, ExtractionResult};
 use anyhow::Result;
+use chrome_elevator::decryption::{AbeDecryptor, BrowserConfig, DataExtractor, ExtractionResult};
 use std::env;
 use std::path::PathBuf;
 

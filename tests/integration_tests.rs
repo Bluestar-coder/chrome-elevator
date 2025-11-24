@@ -99,7 +99,9 @@ mod ffi_tests {
 
     #[test]
     fn test_memory_constants() {
-        use chrome_elevator::ffi::{MEM_COMMIT, MEM_RELEASE, MEM_RESERVE, PAGE_EXECUTE_READ, PAGE_READWRITE};
+        use chrome_elevator::ffi::{
+            MEM_COMMIT, MEM_RELEASE, MEM_RESERVE, PAGE_EXECUTE_READ, PAGE_READWRITE,
+        };
 
         assert_eq!(MEM_COMMIT, 0x1000);
         assert_eq!(MEM_RESERVE, 0x2000);
