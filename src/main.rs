@@ -1,16 +1,10 @@
 // Chrome Elevator - Rust Edition
 // v0.17.0 - Rust port with cross-platform compilation support
 
-mod decryption;
-mod ffi;
-mod injection;
-mod obfuscation;
-
+use chrome_elevator::decryption::{AbeDecryptor, BrowserConfig, DataExtractor, ExtractionResult};
 use anyhow::Result;
 use std::env;
 use std::path::PathBuf;
-
-use decryption::{AbeDecryptor, BrowserConfig, DataExtractor, ExtractionResult};
 
 fn main() -> Result<()> {
     print_banner();
@@ -176,7 +170,7 @@ fn process_browser(browser: &str, config: &Config) -> Result<()> {
 
 fn process_all_browsers(config: &Config) -> Result<()> {
     // 发现所有已安装的浏览器
-    let browsers = decryption::discover_installed_browsers();
+    let browsers = chrome_elevator::decryption::discover_installed_browsers();
 
     if browsers.is_empty() {
         println!("[!] No Chromium browsers found");
@@ -224,6 +218,7 @@ fn save_results(result: &ExtractionResult, browser: &str, config: &Config) -> Re
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::path::Path;
 
     #[test]
     fn test_args_parsing() {

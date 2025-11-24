@@ -185,7 +185,7 @@ impl TargetProcess {
 
         // 7. 清理
         unsafe {
-            CloseHandle(thread_handle);
+            let _ = CloseHandle(thread_handle);
         }
         let _ = memory_mgr.free(code_buffer.address(), shellcode.len());
         if !param_address.is_null() {

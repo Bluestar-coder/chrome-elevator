@@ -2,8 +2,6 @@
 
 #[cfg(test)]
 mod obfuscation_tests {
-    use std::path::PathBuf;
-
     #[test]
     fn test_string_obfuscation_import() {
         // 验证混淆模块可以正确导入
@@ -15,7 +13,7 @@ mod obfuscation_tests {
     fn test_obfuscation_feature() {
         // 确保混淆功能已启用
         // 这是一个占位符测试，实际的加密测试需要在构建后运行
-        assert!(true);
+        // TODO: 实现实际的加密测试
     }
 }
 
@@ -38,13 +36,14 @@ mod injection_tests {
         use std::ptr;
         use windows::Win32::Foundation::HANDLE;
 
-        let handle = HANDLE(ptr::null_mut());
+        let handle = HANDLE(ptr::null_mut::<()>() as isize);
         assert!(handle.is_invalid());
     }
 
     #[test]
     fn test_pe_header_validation() {
         // 验证PE文件头验证逻辑
+        #[allow(clippy::useless_vec)]
         let mut valid_pe = vec![0u8; 64];
         valid_pe[0] = b'M';
         valid_pe[1] = b'Z';
@@ -92,7 +91,7 @@ mod decryption_tests {
 mod ffi_tests {
     #[test]
     fn test_status_codes() {
-        use crate::ffi::{nt_success, STATUS_ACCESS_DENIED, STATUS_SUCCESS};
+        use chrome_elevator::ffi::{nt_success, STATUS_ACCESS_DENIED, STATUS_SUCCESS};
 
         assert!(nt_success(STATUS_SUCCESS));
         assert!(!nt_success(STATUS_ACCESS_DENIED));
@@ -100,7 +99,7 @@ mod ffi_tests {
 
     #[test]
     fn test_memory_constants() {
-        use crate::ffi::{MEM_COMMIT, MEM_RELEASE, MEM_RESERVE, PAGE_EXECUTE_READ, PAGE_READWRITE};
+        use chrome_elevator::ffi::{MEM_COMMIT, MEM_RELEASE, MEM_RESERVE, PAGE_EXECUTE_READ, PAGE_READWRITE};
 
         assert_eq!(MEM_COMMIT, 0x1000);
         assert_eq!(MEM_RESERVE, 0x2000);
@@ -115,7 +114,7 @@ mod main_workflow_tests {
     #[test]
     fn test_command_line_parsing() {
         // 测试命令行参数解析
-        let args = vec![
+        let args = [
             "chrome-elevator.exe",
             "chrome",
             "--output-path",
@@ -155,7 +154,7 @@ mod security_tests {
     fn test_string_mixing_present() {
         // 验证混淆模块已包含
         // 这是一个占位符，实际测试需要编译时验证
-        assert!(true);
+        // TODO: 实现实际的混淆测试
     }
 
     #[test]
@@ -190,12 +189,12 @@ mod cross_platform_tests {
         // 验证Windows目标编译
         #[cfg(all(target_os = "windows", target_arch = "x86_64"))]
         {
-            assert!(true);
+            // x86_64 Windows target verification
         }
 
         #[cfg(all(target_os = "windows", target_arch = "aarch64"))]
         {
-            assert!(true);
+            // aarch64 Windows target verification
         }
     }
 
@@ -203,6 +202,6 @@ mod cross_platform_tests {
     fn test_cross_compilation_readiness() {
         // 验证交叉编译准备
         // 这个测试可以在Mac/Linux上运行
-        assert!(true);
+        // TODO: 验证Windows编译目标就绪
     }
 }

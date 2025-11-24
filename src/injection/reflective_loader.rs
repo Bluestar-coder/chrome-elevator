@@ -84,11 +84,13 @@ impl ReflectiveLoader {
         }
 
         // 3. 写入DLL数据到目标进程
-        ffi::write_virtual_memory_ex(
-            target_process.process_handle,
-            dll_address,
-            &self.config.dll_bytes,
-        )
+        unsafe {
+            ffi::write_virtual_memory_ex(
+                target_process.process_handle,
+                dll_address,
+                &self.config.dll_bytes,
+            )
+        }
         .context("Failed to write DLL to target process")?;
 
         if self.config.verbose {
@@ -99,12 +101,14 @@ impl ReflectiveLoader {
         }
 
         // 4. 设置内存为可执行
-        ffi::protect_virtual_memory_ex(
-            target_process.process_handle,
-            dll_address,
-            self.config.dll_bytes.len(),
-            PAGE_EXECUTE_READ,
-        )
+        unsafe {
+            ffi::protect_virtual_memory_ex(
+                target_process.process_handle,
+                dll_address,
+                self.config.dll_bytes.len(),
+                PAGE_EXECUTE_READ,
+            )
+        }
         .context("Failed to set memory protection")?;
 
         if self.config.verbose {

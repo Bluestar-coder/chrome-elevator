@@ -78,7 +78,7 @@ impl AbeDecryptor {
     pub fn decrypt_with_dpapi(encrypted_key: &[u8]) -> Result<Vec<u8>> {
         use windows::Win32::Security::Cryptography::*;
 
-        let mut data_blob = CRYPT_INTEGER_BLOB {
+        let data_blob = CRYPT_INTEGER_BLOB {
             cbData: encrypted_key.len() as u32,
             pbData: encrypted_key.as_ptr() as *mut u8,
         };
@@ -89,7 +89,7 @@ impl AbeDecryptor {
         };
 
         unsafe {
-            CryptUnprotectData(&mut data_blob, None, None, None, None, 0, &mut output_blob)?;
+            CryptUnprotectData(&data_blob, None, None, None, None, 0, &mut output_blob)?;
 
             let key = std::slice::from_raw_parts(output_blob.pbData, output_blob.cbData as usize);
             let result = key.to_vec();

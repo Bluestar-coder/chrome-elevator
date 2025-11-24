@@ -104,7 +104,7 @@ pub fn allocate_virtual_memory_ex(process_handle: HANDLE, size: usize) -> anyhow
         let mut region_size = size;
 
         let status = nt_allocate_virtual_memory(
-            process_handle.0 as isize,
+            process_handle.0,
             &mut base_addr,
             0,
             &mut region_size,
@@ -134,7 +134,11 @@ pub fn allocate_virtual_memory_ex(process_handle: HANDLE, size: usize) -> anyhow
 }
 
 /// 使用系统调用写入内存（带后备方案）
-pub fn write_virtual_memory_ex(
+///
+/// # Safety
+///
+/// 调用者必须保证`base_address`指向有效的内存地址，该地址可以被写入。
+pub unsafe fn write_virtual_memory_ex(
     process_handle: HANDLE,
     base_address: *mut u8,
     buffer: &[u8],
@@ -144,7 +148,7 @@ pub fn write_virtual_memory_ex(
         let mut bytes_written = 0usize;
 
         let status = nt_write_virtual_memory(
-            process_handle.0 as isize,
+            process_handle.0,
             base_address,
             buffer.as_ptr(),
             buffer.len(),
@@ -170,7 +174,11 @@ pub fn write_virtual_memory_ex(
 }
 
 /// 使用系统调用读取内存（带后备方案）
-pub fn read_virtual_memory_ex(
+///
+/// # Safety
+///
+/// 调用者必须保证`base_address`指向有效的内存地址，该地址可以被读取。
+pub unsafe fn read_virtual_memory_ex(
     process_handle: HANDLE,
     base_address: *const u8,
     size: usize,
@@ -181,7 +189,7 @@ pub fn read_virtual_memory_ex(
         let mut bytes_read = 0usize;
 
         let status = nt_read_virtual_memory(
-            process_handle.0 as isize,
+            process_handle.0,
             base_address,
             buffer.as_mut_ptr(),
             size,
@@ -209,7 +217,11 @@ pub fn read_virtual_memory_ex(
 }
 
 /// 使用系统调用修改内存保护（带后备方案）
-pub fn protect_virtual_memory_ex(
+///
+/// # Safety
+///
+/// 调用者必须保证`base_address`指向有效的内存地址，该内存的大小为`size`字节。
+pub unsafe fn protect_virtual_memory_ex(
     process_handle: HANDLE,
     base_address: *mut u8,
     size: usize,
@@ -222,7 +234,7 @@ pub fn protect_virtual_memory_ex(
         let mut old_protect = 0u32;
 
         let status = nt_protect_virtual_memory(
-            process_handle.0 as isize,
+            process_handle.0,
             &mut addr,
             &mut region_size,
             new_protect.0,
@@ -248,7 +260,11 @@ pub fn protect_virtual_memory_ex(
 }
 
 /// 使用系统调用创建远程线程（带后备方案）
-pub fn create_thread_ex(
+///
+/// # Safety
+///
+/// 调用者必须保证`start_address`和`param`指向有效的内存地址，这些地址必须在目标进程中有效。
+pub unsafe fn create_thread_ex(
     process_handle: HANDLE,
     start_address: *mut u8,
     param: *mut u8,
@@ -261,7 +277,7 @@ pub fn create_thread_ex(
             &mut thread_handle,
             0x001F0000, // THREAD_ALL_ACCESS
             std::ptr::null_mut(),
-            process_handle.0 as isize,
+            process_handle.0,
             start_address,
             param,
             0,
